@@ -57,6 +57,18 @@ class ThresholdsConfig(BaseModel):
     precip_chance_cutoff_pct: float
 
 
+class ModelsConfig(BaseModel):
+    """Training hyperparameters shared by all dimension models. holdout_frac is the
+    fraction of distinct valid_dates held out for time-based evaluation; calib_fraction
+    is the fraction of the remaining training rows carved out (randomly) to fit
+    calibration -- see models/linear.py."""
+
+    holdout_frac: float
+    calib_fraction: float
+    class_weight: str
+    random_state: int
+
+
 class AppConfig(BaseModel):
     # No field defaults here on purpose: every value must come from config/app.yaml so
     # there is one source of truth, not code defaults that can silently drift from it.
@@ -65,6 +77,7 @@ class AppConfig(BaseModel):
     providers: ProvidersConfig
     backfill: BackfillConfig
     thresholds: ThresholdsConfig
+    models: ModelsConfig
 
     @classmethod
     def from_yaml(cls, path: Path = CONFIG_PATH) -> "AppConfig":

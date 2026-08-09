@@ -16,12 +16,15 @@ dependencies = [
     "dbt-duckdb>=1.11.0",
     "duckdb>=1.5.5",
     "great-expectations>=1.20.0",
+    "joblib>=1.5.3",
     "pandas>=3.0.5",
     "pyarrow>=25.0.0",
     "pydantic>=2",
     "pydantic-settings>=2.15.0",
     "pyyaml>=6.0.3",
     "requests>=2.34.2",
+    "scikit-learn>=1.9.0",
+    "shap>=0.52.0",
 ]
 
 [project.scripts]

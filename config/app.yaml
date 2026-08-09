@@ -25,3 +25,9 @@ thresholds:
   cloud_cover_pp: 25.0
   humidity_pp: 15.0
   precip_chance_cutoff_pct: 50.0
+
+models:
+  holdout_frac: 0.25
+  calib_fraction: 0.2
+  class_weight: "balanced"
+  random_state: 0
