@@ -46,6 +46,17 @@ class BackfillConfig(BaseModel):
     end_lag_days: int
 
 
+class ThresholdsConfig(BaseModel):
+    """"Significant error" cutoffs per dimension. Temps are Celsius (Open-Meteo default,
+    confirmed against real backfilled data -- NYC/SF/Chicago August values land in
+    13-33 range). precip_chance is binarized rather than diffed (see mappings)."""
+
+    temp_max_celsius: float
+    cloud_cover_pp: float
+    humidity_pp: float
+    precip_chance_cutoff_pct: float
+
+
 class AppConfig(BaseModel):
     # No field defaults here on purpose: every value must come from config/app.yaml so
     # there is one source of truth, not code defaults that can silently drift from it.
@@ -53,6 +64,7 @@ class AppConfig(BaseModel):
     logging: LoggingConfig
     providers: ProvidersConfig
     backfill: BackfillConfig
+    thresholds: ThresholdsConfig
 
     @classmethod
     def from_yaml(cls, path: Path = CONFIG_PATH) -> "AppConfig":

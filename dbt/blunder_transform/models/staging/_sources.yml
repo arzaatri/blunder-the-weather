@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: silver
+    meta:
+      external_location: "s3://blunder-the-weather/silver/{identifier}/dt=*/part.parquet"
+    tables:
+      - name: actuals
+      - name: forecasts

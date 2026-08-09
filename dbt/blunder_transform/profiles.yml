@@ -1,0 +1,16 @@
+blunder_transform:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ":memory:"
+      threads: 1
+      extensions:
+        - httpfs
+      secrets:
+        - type: s3
+          key_id: "{{ env_var('MINIO_ROOT_USER') }}"
+          secret: "{{ env_var('MINIO_ROOT_PASSWORD') }}"
+          endpoint: "{{ env_var('MINIO_ENDPOINT_HOST') }}"
+          url_style: path
+          use_ssl: false
