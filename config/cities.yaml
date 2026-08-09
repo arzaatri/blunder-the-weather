@@ -1,0 +1,15 @@
+# Cities in scope. Adding a city is one entry here -- everything downstream
+# (grid generation, providers, storage) picks it up automatically.
+cities:
+  - city_id: nyc
+    name: New York City
+    center_lat: 40.7128
+    center_lon: -74.0060
+  - city_id: sf
+    name: San Francisco
+    center_lat: 37.7749
+    center_lon: -122.4194
+  - city_id: chi
+    name: Chicago
+    center_lat: 41.8781
+    center_lon: -87.6298
