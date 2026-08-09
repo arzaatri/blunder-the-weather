@@ -1,0 +1,28 @@
+[project]
+name = "blunder-the-weather"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Adhham Zaatri", email = "arzaatri@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "dagster>=1.13.16",
+    "dagster-aws>=0.29.16",
+    "dagster-webserver>=1.13.16",
+    "duckdb>=1.5.5",
+    "pandas>=3.0.5",
+    "pyarrow>=25.0.0",
+    "pydantic>=2",
+    "pydantic-settings>=2.15.0",
+    "pyyaml>=6.0.3",
+    "requests>=2.34.2",
+]
+
+[project.scripts]
+blunder-the-weather = "blunder_the_weather:main"
+
+[build-system]
+requires = ["uv_build>=0.10.10,<0.11.0"]
+build-backend = "uv_build"

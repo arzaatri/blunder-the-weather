@@ -1,0 +1,7 @@
+# Non-secret application configuration. Credentials live in .env (see .env.example), never here.
+minio:
+  endpoint_url: "http://localhost:9100"
+  bucket: "blunder-the-weather"
+
+logging:
+  level: "INFO"

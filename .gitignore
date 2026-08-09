@@ -1,0 +1,22 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Project notes (personal, not for version control)
+NOTES.txt
+TODO.txt
+
+# Local runtime state
+data/
+logs/
+.pids/
+.dagster_home/
+.env
+
