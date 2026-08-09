@@ -1,13 +1,7 @@
-{{
-  config(
-    materialized='external',
-    location='s3://blunder-the-weather/gold/ground_truth_log/part.parquet',
-    format='parquet'
-  )
-}}
+
 
 with errors as (
-    select * from {{ ref('int_forecast_errors') }}
+    select * from "memory"."main"."int_forecast_errors"
 ),
 
 temp_max as (
@@ -17,7 +11,7 @@ temp_max as (
         temp_max_forecast as forecast_value,
         temp_max_actual as actual_value,
         abs(temp_max_forecast - temp_max_actual) as abs_error,
-        {{ var('temp_max_threshold') }} as threshold_used
+        3.0 as threshold_used
     from errors
 ),
 
@@ -28,7 +22,7 @@ temp_min as (
         temp_min_forecast as forecast_value,
         temp_min_actual as actual_value,
         abs(temp_min_forecast - temp_min_actual) as abs_error,
-        {{ var('temp_min_threshold') }} as threshold_used
+        3.0 as threshold_used
     from errors
 ),
 
@@ -39,7 +33,7 @@ cloud_cover as (
         cloud_cover_forecast as forecast_value,
         cloud_cover_actual as actual_value,
         abs(cloud_cover_forecast - cloud_cover_actual) as abs_error,
-        {{ var('cloud_cover_threshold') }} as threshold_used
+        25.0 as threshold_used
     from errors
 ),
 
@@ -50,7 +44,7 @@ humidity as (
         humidity_forecast as forecast_value,
         humidity_actual as actual_value,
         abs(humidity_forecast - humidity_actual) as abs_error,
-        {{ var('humidity_threshold') }} as threshold_used
+        15.0 as threshold_used
     from errors
 ),
 
@@ -64,7 +58,7 @@ precip_chance as (
         precip_chance_forecast as forecast_value,
         (case when precip_sum_actual > 0.1 then 1.0 else 0.0 end) as actual_value,
         abs(
-            (case when precip_chance_forecast > {{ var('precip_chance_cutoff') }} then 1.0 else 0.0 end)
+            (case when precip_chance_forecast > 50.0 then 1.0 else 0.0 end)
             - (case when precip_sum_actual > 0.1 then 1.0 else 0.0 end)
         ) as abs_error,
         0.5 as threshold_used

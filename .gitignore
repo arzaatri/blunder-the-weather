@@ -21,3 +21,7 @@ logs/
 !.dagster_home/dagster.yaml
 .env
 
+# Trained model artifacts (local mirror of the MinIO models/ prefix -- binaries,
+# not source; anchored to repo root so it doesn't shadow src/blunder_the_weather/models/)
+/models/
+

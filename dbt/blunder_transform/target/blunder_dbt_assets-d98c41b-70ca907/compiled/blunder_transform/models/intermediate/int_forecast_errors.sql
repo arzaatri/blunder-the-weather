@@ -13,7 +13,7 @@ select
     a.humidity_mean as humidity_actual,
     f.precip_chance as precip_chance_forecast,
     a.precip_sum as precip_sum_actual
-from {{ ref('stg_forecasts') }} f
-inner join {{ ref('stg_actuals') }} a
+from "memory"."main"."stg_forecasts" f
+inner join "memory"."main"."stg_actuals" a
     on f.point_id = a.point_id
     and f.valid_date = a.valid_date

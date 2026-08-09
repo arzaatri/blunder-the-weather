@@ -1,4 +1,7 @@
-select
+
+  
+  create view "memory"."main"."int_forecast_errors__dbt_tmp" as (
+    select
     f.point_id,
     f.valid_date,
     f.lead_days,
@@ -13,7 +16,8 @@ select
     a.humidity_mean as humidity_actual,
     f.precip_chance as precip_chance_forecast,
     a.precip_sum as precip_sum_actual
-from {{ ref('stg_forecasts') }} f
-inner join {{ ref('stg_actuals') }} a
+from "memory"."main"."stg_forecasts" f
+inner join "memory"."main"."stg_actuals" a
     on f.point_id = a.point_id
     and f.valid_date = a.valid_date
+  );

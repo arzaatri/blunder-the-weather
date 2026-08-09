@@ -26,7 +26,7 @@ SILVER_FORECASTS_EXPECTATIONS = [
 
 GOLD_GROUND_TRUTH_LOG_EXPECTATIONS = [
     gx.expectations.ExpectColumnValuesToBeInSet(
-        column="dimension", value_set=["temp_max", "cloud_cover", "humidity", "precip_chance"]
+        column="dimension", value_set=["temp_max", "temp_min", "cloud_cover", "humidity", "precip_chance"]
     ),
     gx.expectations.ExpectColumnValuesToBeBetween(column="abs_error", min_value=0, max_value=None),
     gx.expectations.ExpectColumnValuesToNotBeNull(column="threshold_used"),

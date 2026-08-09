@@ -52,6 +52,7 @@ class ThresholdsConfig(BaseModel):
     13-33 range). precip_chance is binarized rather than diffed (see mappings)."""
 
     temp_max_celsius: float
+    temp_min_celsius: float
     cloud_cover_pp: float
     humidity_pp: float
     precip_chance_cutoff_pct: float

@@ -34,6 +34,7 @@ def blunder_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
     thresholds = load_config().thresholds
     dbt_vars = {
         "temp_max_threshold": thresholds.temp_max_celsius,
+        "temp_min_threshold": thresholds.temp_min_celsius,
         "cloud_cover_threshold": thresholds.cloud_cover_pp,
         "humidity_threshold": thresholds.humidity_pp,
         "precip_chance_cutoff": thresholds.precip_chance_cutoff_pct,

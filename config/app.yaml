@@ -22,6 +22,7 @@ backfill:
 # provisional, not yet tuned against real error percentiles
 thresholds:
   temp_max_celsius: 3.0
+  temp_min_celsius: 3.0
   cloud_cover_pp: 25.0
   humidity_pp: 15.0
   precip_chance_cutoff_pct: 50.0
