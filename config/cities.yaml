@@ -1,5 +1,8 @@
-# Cities in scope. Adding a city is one entry here -- everything downstream
-# (grid generation, providers, storage) picks it up automatically.
+# spacing_km: 25 to stay well above observed model grid-snap noise (~11km worst case).
+grid:
+  size: 3
+  spacing_km: 25.0
+
 cities:
   - city_id: nyc
     name: New York City

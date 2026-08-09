@@ -24,12 +24,35 @@ class MinioConfig(BaseModel):
 
 
 class LoggingConfig(BaseModel):
-    level: str = "INFO"
+    level: str
+
+
+class ProvidersConfig(BaseModel):
+    """Which concrete provider fills each role. Each role is independently swappable --
+    changing one is a config edit, not a code change, as long as a matching class is
+    registered in providers/factory.py."""
+
+    actuals: str
+    historical_forecast: str
+    live_forecast: str
+
+
+class BackfillConfig(BaseModel):
+    """Backfill window, expressed relative to "today" rather than fixed dates so it
+    doesn't go stale. end_lag_days accounts for data-availability lag confirmed via the
+    Phase 0 spike (both APIs were current as of yesterday, but a small buffer is safer)."""
+
+    lookback_days: int
+    end_lag_days: int
 
 
 class AppConfig(BaseModel):
+    # No field defaults here on purpose: every value must come from config/app.yaml so
+    # there is one source of truth, not code defaults that can silently drift from it.
     minio: MinioConfig
-    logging: LoggingConfig = LoggingConfig()
+    logging: LoggingConfig
+    providers: ProvidersConfig
+    backfill: BackfillConfig
 
     @classmethod
     def from_yaml(cls, path: Path = CONFIG_PATH) -> "AppConfig":

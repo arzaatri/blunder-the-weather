@@ -31,6 +31,24 @@ def test_actual_observation_rejects_missing_field() -> None:
         )  # missing precip_sum
 
 
+def test_forecast_record_accepts_null_precip_chance() -> None:
+    # Legitimate: the Previous Runs API's precip_chance archive starts later than the
+    # other variables, so older backfilled rows may genuinely lack it.
+    record = ForecastRecord(
+        point_id="nyc_1_1",
+        valid_date=date(2024, 6, 5),
+        lead_days=4,
+        issued_date=date(2024, 6, 1),
+        temp_max=27.0,
+        temp_min=14.0,
+        cloud_cover_mean=40.0,
+        humidity_mean=55.0,
+        precip_chance=None,
+        source="previous_runs_backfill",
+    )
+    assert record.precip_chance is None
+
+
 def test_forecast_record_accepts_valid_data() -> None:
     record = ForecastRecord(
         point_id="nyc_1_1",

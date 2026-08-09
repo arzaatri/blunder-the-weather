@@ -1,0 +1,8 @@
+# Sequential run execution: Open-Meteo is a free, unauthenticated API, and concurrent
+# runs each firing large multi-location requests tripped its rate limit (confirmed
+# during Phase 2 backfill -- "too many 429 error responses").
+run_coordinator:
+  module: dagster.core.run_coordinator
+  class: QueuedRunCoordinator
+  config:
+    max_concurrent_runs: 1

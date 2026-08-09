@@ -5,3 +5,16 @@ minio:
 
 logging:
   level: "INFO"
+
+# Which concrete provider fills each role (see providers/factory.py for the registry
+# of valid names). Independently swappable -- change one line, no code changes.
+providers:
+  actuals: "open_meteo"
+  historical_forecast: "open_meteo"
+  live_forecast: "open_meteo"
+
+# Backfill window, relative to today. end_lag_days is a safety buffer behind the
+# confirmed data-availability lag (both source APIs were current as of yesterday).
+backfill:
+  lookback_days: 10
+  end_lag_days: 2

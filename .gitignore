@@ -17,6 +17,7 @@ TODO.txt
 data/
 logs/
 .pids/
-.dagster_home/
+.dagster_home/*
+!.dagster_home/dagster.yaml
 .env
 

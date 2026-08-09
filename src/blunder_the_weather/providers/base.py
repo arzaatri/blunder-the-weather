@@ -15,6 +15,10 @@ from blunder_the_weather.geo.grids import GridPoint
 
 ForecastSource = Literal["previous_runs_backfill", "live_daily"]
 
+# The Previous Runs API only reconstructs lead 1-7 (lead 0 is the current run, not a
+# forecast made in advance); this is the shared default across providers/assets.
+DEFAULT_LEAD_DAYS = list(range(1, 8))
+
 
 class ActualObservation(BaseModel):
     """A single day's observed actuals at one grid point."""
@@ -40,7 +44,10 @@ class ForecastRecord(BaseModel):
     temp_min: float
     cloud_cover_mean: float
     humidity_mean: float
-    precip_chance: float  # forecast probability of precipitation, 0-100
+    # Forecast probability of precipitation, 0-100. Nullable: the Previous Runs API's
+    # archive of this variable starts later than the other three (confirmed via spike --
+    # null before ~2024-09, populated by 2025-01), so older backfilled rows may lack it.
+    precip_chance: float | None
     source: ForecastSource
 
 
