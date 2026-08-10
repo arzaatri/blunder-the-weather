@@ -145,6 +145,7 @@ name = "blunder-the-weather"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "altair" },
     { name = "dagster" },
     { name = "dagster-aws" },
     { name = "dagster-dbt" },
@@ -175,6 +176,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "altair", specifier = ">=5.0.0" },
     { name = "dagster", specifier = ">=1.13.16" },
     { name = "dagster-aws", specifier = ">=0.29.16" },
     { name = "dagster-dbt", specifier = ">=0.29.16" },
