@@ -18,6 +18,8 @@ from sklearn.preprocessing import StandardScaler
 
 from blunder_the_weather.models.base import ExplanationResult
 
+MODEL_TYPE = "logistic"
+
 
 class LogisticRegressionCalibratedModel:
     """fit() internally carves out a stratified calibration split from X/y (rather
@@ -81,7 +83,7 @@ class LogisticRegressionCalibratedModel:
         dump(self._base, path / "base.joblib")
         dump(self._calibrated, path / "calibrated.joblib")
         dump(self._background, path / "background.joblib")
-        (path / "meta.json").write_text(json.dumps({"feature_names": self.feature_names}))
+        (path / "meta.json").write_text(json.dumps({"feature_names": self.feature_names, "model_type": MODEL_TYPE}))
 
     @classmethod
     def load(cls, path: Path) -> "LogisticRegressionCalibratedModel":

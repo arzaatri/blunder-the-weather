@@ -1,0 +1,40 @@
+temp_max:
+  n_estimators: 233
+  max_depth: 4
+  learning_rate: 0.024591256383397347
+  subsample: 0.8871168447171083
+  colsample_bytree: 0.7280751661082743
+  reg_alpha: 0.0003527537107422774
+  reg_lambda: 1.4760742495197955e-08
+temp_min:
+  n_estimators: 233
+  max_depth: 4
+  learning_rate: 0.024591256383397347
+  subsample: 0.8871168447171083
+  colsample_bytree: 0.7280751661082743
+  reg_alpha: 0.0003527537107422774
+  reg_lambda: 1.4760742495197955e-08
+cloud_cover:
+  n_estimators: 74
+  max_depth: 2
+  learning_rate: 0.010711863369746433
+  subsample: 0.916309922773969
+  colsample_bytree: 0.8890783754749252
+  reg_alpha: 0.09122149510449752
+  reg_lambda: 6.42044426233932
+humidity:
+  n_estimators: 233
+  max_depth: 4
+  learning_rate: 0.024591256383397347
+  subsample: 0.8871168447171083
+  colsample_bytree: 0.7280751661082743
+  reg_alpha: 0.0003527537107422774
+  reg_lambda: 1.4760742495197955e-08
+precip_chance:
+  n_estimators: 74
+  max_depth: 2
+  learning_rate: 0.010711863369746433
+  subsample: 0.916309922773969
+  colsample_bytree: 0.8890783754749252
+  reg_alpha: 0.09122149510449752
+  reg_lambda: 6.42044426233932

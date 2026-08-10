@@ -8,7 +8,7 @@ import duckdb
 import pandas as pd
 
 from blunder_the_weather.config import load_config
-from blunder_the_weather.geo.registry import all_grid_points
+from blunder_the_weather.geo.registry import all_cities, all_grid_points
 from blunder_the_weather.lakehouse.duckdb_query import get_connection
 from blunder_the_weather.lakehouse.paths import s3_uri
 from blunder_the_weather.models.base import ExplanationResult
@@ -56,6 +56,22 @@ def load_volatility_scores(scored_date: date) -> pd.DataFrame:
 
 def _city_point_ids(city_id: str) -> list[str]:
     return [p.point_id for p in all_grid_points() if p.city_id == city_id]
+
+
+def city_overview_scores(volatility: pd.DataFrame) -> pd.DataFrame:
+    """One row per city (city_id, name, lat, lon, score) -- score is the combined
+    volatility score aggregated (per dashboard.city_aggregation) across every grid
+    point and lead day, for the dashboard's map overview. This is a coarser rollup
+    than city_dimension_table's per-lead-day breakdown -- just enough for "which city
+    looks unreliable this week" at a glance."""
+    aggregation = load_config().dashboard.city_aggregation
+    rows = []
+    for city in all_cities():
+        points = _city_point_ids(city.city_id)
+        city_vol = volatility[volatility["point_id"].isin(points)]
+        score = float(city_vol["volatility_score"].agg(aggregation)) if not city_vol.empty else float("nan")
+        rows.append({"city_id": city.city_id, "name": city.name, "lat": city.center_lat, "lon": city.center_lon, "score": score})
+    return pd.DataFrame(rows)
 
 
 def city_dimension_table(predictions: pd.DataFrame, volatility: pd.DataFrame, city_id: str) -> pd.DataFrame:

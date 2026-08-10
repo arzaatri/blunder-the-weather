@@ -35,6 +35,19 @@ models:
   calib_fraction: 0.2
   class_weight: "balanced"
   random_state: 0
+  # "logistic" (models/linear.py) or "xgboost" (models/xgboost_model.py).
+  model_type: "xgboost"
+  # Used for any dimension without an entry in config/tuned_hyperparams.yaml (written
+  # by scripts/tune_hyperparameters.py's Bayesian search -- run it once that file
+  # exists these defaults are only a fallback).
+  xgboost_default_params:
+    n_estimators: 200
+    max_depth: 3
+    learning_rate: 0.05
+    subsample: 0.8
+    colsample_bytree: 0.8
+    reg_alpha: 0.0
+    reg_lambda: 1.0
 
 # Fixed anchor for live-scoring partitions -- the day live scoring started, not a
 # rolling offset (same reasoning as backfill.start_date).

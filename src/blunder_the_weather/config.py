@@ -67,12 +67,17 @@ class ModelsConfig(BaseModel):
     """Training hyperparameters shared by all dimension models. holdout_frac is the
     fraction of distinct valid_dates held out for time-based evaluation; calib_fraction
     is the fraction of the remaining training rows carved out (randomly) to fit
-    calibration -- see models/linear.py."""
+    calibration -- see models/linear.py. model_type picks the ModelWrapper class (see
+    models/registry.py); xgboost_default_params is only used when model_type is
+    "xgboost" and a dimension has no tuned params yet in config/tuned_hyperparams.yaml
+    (models/tuning.py's Bayesian search output -- see models/registry.py)."""
 
     holdout_frac: float
     calib_fraction: float
     class_weight: str
     random_state: int
+    model_type: Literal["logistic", "xgboost"]
+    xgboost_default_params: dict[str, float | int]
 
 
 class LiveConfig(BaseModel):

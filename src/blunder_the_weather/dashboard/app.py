@@ -7,10 +7,12 @@ from MinIO via dashboard/data.py -- no persisted .duckdb file, no separate datab
 
 import duckdb
 import pandas as pd
+import pydeck as pdk
 import streamlit as st
 
 from blunder_the_weather.dashboard.data import (
     city_dimension_table,
+    city_overview_scores,
     explain_city_center,
     latest_scored_date,
     load_predictions,
@@ -18,6 +20,43 @@ from blunder_the_weather.dashboard.data import (
 )
 from blunder_the_weather.geo.registry import all_cities
 from blunder_the_weather.models.registry import DIMENSIONS
+
+
+def _score_color(score: float) -> list[int]:
+    """Green (reliable) -> red (volatile) for a score in [0, 1]; grey for a city with
+    no data (e.g. NaN if a city somehow has zero grid points scored)."""
+    if pd.isna(score):
+        return [150, 150, 150, 160]
+    score = max(0.0, min(1.0, score))
+    return [int(200 * score), int(170 * (1 - score)), 40, 200]
+
+
+def _render_map(overview: pd.DataFrame) -> None:
+    overview = overview.copy()
+    overview["color"] = overview["score"].apply(_score_color)
+    overview["score_label"] = overview["score"].apply(lambda s: "no data" if pd.isna(s) else f"{s:.0%}")
+
+    layer = pdk.Layer(
+        "ScatterplotLayer",
+        data=overview,
+        get_position="[lon, lat]",
+        get_fill_color="color",
+        get_radius=20000,
+        pickable=True,
+        stroked=True,
+        get_line_color=[255, 255, 255],
+        line_width_min_pixels=1,
+    )
+    view_state = pdk.ViewState(latitude=overview["lat"].mean(), longitude=overview["lon"].mean(), zoom=3.2)
+    st.pydeck_chart(
+        pdk.Deck(
+            layers=[layer],
+            initial_view_state=view_state,
+            tooltip={"text": "{name}\nAvg. 7-day volatility: {score_label}"},
+        ),
+        width="stretch",
+    )
+
 
 st.set_page_config(page_title="Blunder the Weather", layout="wide")
 st.title("Blunder the Weather")
@@ -41,13 +80,17 @@ if scored_date is None:
 
 st.caption(f"Forecast issued: {scored_date.isoformat()}")
 
+predictions = load_predictions(scored_date)
+volatility = load_volatility_scores(scored_date)
+
+st.subheader("Overview")
+_render_map(city_overview_scores(volatility))
+
 cities = all_cities()
 city_name_by_id = {city.city_id: city.name for city in cities}
 selected_name = st.selectbox("City", options=[city.name for city in cities])
 selected_city_id = next(city.city_id for city in cities if city.name == selected_name)
 
-predictions = load_predictions(scored_date)
-volatility = load_volatility_scores(scored_date)
 table = city_dimension_table(predictions, volatility, selected_city_id)
 
 st.subheader(f"{city_name_by_id[selected_city_id]}: 7-day error-probability outlook")
