@@ -24,30 +24,36 @@ from blunder_the_weather.models.registry import DIMENSIONS
 
 _CITY_LAYER_ID = "cities"
 
-# Shared by the map and the volatility chart so their two columns end up the same
-# height (the map/dropdown column and the chart/checkboxes column both add one row
-# of controls above a chart of this height, so the totals line up).
+# Fixed rather than height="stretch": with no fixed-size anchor anywhere in the column,
+# two independently-"stretching" cards don't equalize against each other -- both just
+# collapse to some small default. A shared pixel height is what actually keeps the
+# map and chart cards the same size.
 _CHART_HEIGHT = 480
 
-# Hardcoded per-metric so a line's color never shifts as the checkbox selection below
-# changes which subset of columns st.line_chart is asked to plot.
+# Hardcoded per-metric so a line's color never shifts as the pills selection below
+# changes which subset of columns the chart is asked to plot. Matched to the "storm
+# watch" theme's semantic colors (.streamlit/config.toml) rather than arbitrary
+# values -- "combined" in particular used to be pure black, which is invisible
+# against the theme's navy background.
 METRIC_COLORS: dict[str, str] = {
-    "temp_max": "#e6194b",
-    "temp_min": "#4363d8",
-    "cloud_cover": "#808080",
-    "humidity": "#3cb44b",
-    "precip_chance": "#f58231",
-    "combined": "#000000",
+    "combined": "#FFFFFF",
+    "temp_max": "#F43F5E",
+    "temp_min": "#C084FC",  # pivoted off blue entirely -- too close to the navy background
+    "cloud_cover": "#7DD3FC",
+    "humidity": "#34D399",
+    "precip_chance": "#FB923C",
 }
 
 
 def _score_color(score: float) -> list[int]:
-    """Green (reliable) -> red (volatile) for a score in [0, 1]; grey for a city with
-    no data (e.g. NaN if a city somehow has zero grid points scored)."""
+    """Green (reliable) -> red (volatile) for a score in [0, 1], interpolated between
+    the theme's greenColor/redColor; grey (theme's grayColor) for a city with no data
+    (e.g. NaN if a city somehow has zero grid points scored)."""
     if pd.isna(score):
-        return [150, 150, 150, 160]
+        return [148, 163, 184, 180]
     score = max(0.0, min(1.0, score))
-    return [int(200 * score), int(170 * (1 - score)), 40, 200]
+    green, red = (52, 211, 153), (244, 63, 94)
+    return [int(green[i] + (red[i] - green[i]) * score) for i in range(3)] + [230]
 
 
 def _render_map(overview: pd.DataFrame):
@@ -75,6 +81,7 @@ def _render_map(overview: pd.DataFrame):
             layers=[layer],
             initial_view_state=view_state,
             tooltip={"text": "{name}\nAvg. 7-day volatility: {score_label}"},
+            map_style="dark_no_labels",  # pin explicitly for the dark theme rather than relying on pydeck's default
         ),
         width="stretch",
         height=_CHART_HEIGHT,
@@ -111,9 +118,48 @@ if scored_date is None:
 
 predictions = load_predictions(scored_date)
 volatility = load_volatility_scores(scored_date)
+overview = city_overview_scores(volatility)
 
 cities = all_cities()
 city_name_by_id = {city.city_id: city.name for city in cities}
+
+# KPI row -- all four derived from data already loaded above, no new queries. None
+# carry a chart_data sparkline -- that made one card taller than the other three.
+riskiest = overview.loc[overview["score"].idxmax()]
+calmest = overview.loc[overview["score"].idxmin()]
+dim_means = predictions.groupby("dimension")["calibrated_prob"].mean()
+worst_dim = dim_means.idxmax()
+best_dim = dim_means.idxmin()
+
+with st.container(horizontal=True):
+    st.metric(
+        "Riskiest city today",
+        f":material/warning: {riskiest['name']}",
+        delta=f"{riskiest['score']:.0%} avg 7-day volatility",
+        delta_color="off",
+        border=True,
+    )
+    st.metric(
+        "Most stable city today",
+        f":material/verified: {calmest['name']}",
+        delta=f"{calmest['score']:.0%} avg 7-day volatility",
+        delta_color="off",
+        border=True,
+    )
+    st.metric(
+        "Least reliable dimension (network)",
+        f":material/thunderstorm: {worst_dim.replace('_', ' ').title()}",
+        delta=f"{dim_means[worst_dim]:.0%} avg error probability",
+        delta_color="off",
+        border=True,
+    )
+    st.metric(
+        "Most reliable dimension (network)",
+        f":material/check_circle: {best_dim.replace('_', ' ').title()}",
+        delta=f"{dim_means[best_dim]:.0%} avg error probability",
+        delta_color="off",
+        border=True,
+    )
 
 # Top row: map + city selector on the left, the line chart (and its metric toggles)
 # on the right. selected_city_id/table are needed by both this row and everything
@@ -121,14 +167,14 @@ city_name_by_id = {city.city_id: city.name for city in cities}
 # read them -- placement in `with` blocks controls layout, not execution order.
 col_map, col_chart = st.columns(2)
 
-with col_map:
-    st.subheader("Overview")
-    map_event = _render_map(city_overview_scores(volatility))
+with col_map, st.container(border=True):
+    st.markdown("### :material/radar: Overview")
+    map_event = _render_map(overview)
 
     if "city_selector" not in st.session_state:
         st.session_state["city_selector"] = cities[0].name
 
-    # The map's selection state persists across reruns (e.g. a checkbox toggle also
+    # The map's selection state persists across reruns (e.g. a pills toggle also
     # reruns this script), so only push a click into the dropdown the run it actually
     # happens on -- otherwise a stale click would keep overriding later manual
     # dropdown choices on every unrelated rerun.
@@ -142,20 +188,21 @@ with col_map:
 
 table = city_dimension_table(predictions, volatility, selected_city_id)
 
-with col_chart:
-    st.subheader("Volatility score by lead time")
+with col_chart, st.container(border=True):
+    st.markdown("### :material/monitoring: Volatility score by lead time")
     st.caption(f"Forecast issued: {scored_date.isoformat()}")
 
-    chart_metrics = [*DIMENSIONS, "combined"]
-    chart_labels = {**{d: d.replace("_", " ").title() for d in DIMENSIONS}, "combined": "Combined"}
-    default_visible = {"combined"}
-
-    spacer_left, *checkbox_columns, spacer_right = st.columns([1, *([1] * len(chart_metrics)), 1])
-    visible_metrics = []
-    for column, metric in zip(checkbox_columns, chart_metrics):
-        with column:
-            if st.checkbox(chart_labels[metric], value=metric in default_visible, key=f"show_{metric}"):
-                visible_metrics.append(metric)
+    chart_metrics = ["combined", *DIMENSIONS]
+    chart_labels = {"combined": "Combined", **{d: d.replace("_", " ").title() for d in DIMENSIONS}}
+    visible_metrics = st.pills(
+        "Metrics",
+        options=chart_metrics,
+        format_func=lambda m: chart_labels[m],
+        selection_mode="multi",
+        default=["combined"],
+        label_visibility="collapsed",
+        key="chart_metrics",
+    )
 
     if visible_metrics:
         # A continuous temporal (":T") x-axis lets Vega-Lite pick its own tick
@@ -188,22 +235,24 @@ with col_chart:
         st.info("Select at least one metric above to display the chart.")
 
 # Bottom: per-dimension score table, then the SHAP panel.
-st.subheader(f"{city_name_by_id[selected_city_id]}: 7-day error-probability outlook")
-display = table.copy()
-display["valid_date"] = pd.to_datetime(display["valid_date"]).dt.strftime("%a %b %d")
-display = display.rename(columns={"valid_date": "Date", "lead_days": "Lead (days)", "combined": "Combined"})
-percent_columns = [*DIMENSIONS, "Combined"]
-st.dataframe(
-    display.set_index(["Date", "Lead (days)"]).style.format({c: "{:.0%}" for c in percent_columns}),
-    width="stretch",
-)
+with st.container(border=True):
+    st.markdown(f"### :material/table_chart: {city_name_by_id[selected_city_id]}: 7-day error-probability outlook")
+    display = table.copy()
+    display["valid_date"] = pd.to_datetime(display["valid_date"]).dt.strftime("%a %b %d")
+    display = display.rename(columns={"valid_date": "Date", "lead_days": "Lead (days)", "combined": "Combined"})
+    percent_columns = [*DIMENSIONS, "Combined"]
+    st.dataframe(
+        display.set_index(["Date", "Lead (days)"]).style.format({c: "{:.0%}" for c in percent_columns}),
+        width="stretch",
+    )
 
-st.subheader("Why? SHAP feature attribution (city-center grid point)")
-shap_dimension = st.selectbox("Dimension", options=DIMENSIONS, key="shap_dimension")
-shap_lead = st.selectbox("Lead (days)", options=list(range(1, 8)), key="shap_lead")
+with st.container(border=True):
+    st.markdown("### :material/query_stats: Why? SHAP feature attribution (city-center grid point)")
+    shap_dimension = st.selectbox("Dimension", options=DIMENSIONS, key="shap_dimension")
+    shap_lead = st.selectbox("Lead (days)", options=list(range(1, 8)), key="shap_lead")
 
-explanation, feature_df = explain_city_center(scored_date, selected_city_id, shap_dimension)
-row_idx = feature_df.reset_index(drop=True).index[feature_df["lead_days"].reset_index(drop=True) == shap_lead][0]
-shap_row = pd.Series(explanation.shap_values[row_idx], index=explanation.feature_names).sort_values()
-st.bar_chart(shap_row, horizontal=True, x_label="SHAP value", y_label="Feature")
-st.caption(f"Base value: {explanation.base_value:.3f} (log-odds before feature contributions)")
+    explanation, feature_df = explain_city_center(scored_date, selected_city_id, shap_dimension)
+    row_idx = feature_df.reset_index(drop=True).index[feature_df["lead_days"].reset_index(drop=True) == shap_lead][0]
+    shap_row = pd.Series(explanation.shap_values[row_idx], index=explanation.feature_names).sort_values()
+    st.bar_chart(shap_row, horizontal=True, x_label="SHAP value", y_label="Feature")
+    st.caption(f"Base value: {explanation.base_value:.3f} (log-odds before feature contributions)")
