@@ -5,6 +5,7 @@ a SHAP panel for one dimension at the city-center grid point. Reads gold/ direct
 from MinIO via dashboard/data.py -- no persisted .duckdb file, no separate database.
 """
 
+import duckdb
 import pandas as pd
 import streamlit as st
 
@@ -22,7 +23,15 @@ st.set_page_config(page_title="Blunder the Weather", layout="wide")
 st.title("Blunder the Weather")
 st.caption("How likely is today's forecast to turn out wrong, per dimension, over the next 7 days?")
 
-scored_date = latest_scored_date()
+try:
+    scored_date = latest_scored_date()
+except duckdb.IOException:
+    st.error(
+        "Can't reach MinIO. Is the stack running? Try `./start_app.sh` "
+        "(or check that `docker compose ps` shows the `minio` service up)."
+    )
+    st.stop()
+
 if scored_date is None:
     st.warning(
         "No live predictions yet. Run `daily_live_job` in Dagster "

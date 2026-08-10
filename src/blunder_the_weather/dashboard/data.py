@@ -5,6 +5,7 @@ file, no shared state) and reads gold/ directly from MinIO.
 
 from datetime import date
 
+import duckdb
 import pandas as pd
 
 from blunder_the_weather.config import load_config
@@ -20,7 +21,11 @@ def latest_scored_date() -> date | None:
     """Most recent issued_date with a gold/predictions partition, or None if
     daily_live_job has never run. DISTINCT ... ORDER BY ... LIMIT 1 rather than
     MAX(dt) -- MAX() over a hive-partitioned glob hits a DuckDB internal error
-    (statistics propagation bug) when there's only one partition present."""
+    (statistics propagation bug) when there's only one partition present.
+
+    Only "no files match the glob" is treated as "no predictions yet" -- anything
+    else (e.g. MinIO unreachable) re-raises, so a connection failure shows up as an
+    actual error instead of the misleading "run daily_live_job" message."""
     con = get_connection()
     try:
         row = con.execute(
@@ -29,8 +34,10 @@ def latest_scored_date() -> date | None:
             ORDER BY dt DESC LIMIT 1
             """
         ).fetchone()
-    except Exception:
-        return None
+    except duckdb.IOException as e:
+        if "No files found that match the pattern" in str(e):
+            return None
+        raise
     return row[0] if row else None
 
 
