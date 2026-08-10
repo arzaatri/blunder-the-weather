@@ -30,10 +30,41 @@ FEATURE_COLUMNS = [
     *[f"city_{c}" for c in _CITY_IDS[1:]],
 ]
 
+# Maps each dimension to its source column in a silver forecast frame (one row per
+# point/valid_date/lead_days with all five dimensions as separate columns) -- used to
+# build a "forecast_value" column for live scoring, mirroring the per-dimension CTEs in
+# dbt/blunder_transform/models/marts/gold_ground_truth_log.sql.
+DIMENSION_VALUE_COLUMNS = {
+    "temp_max": "temp_max",
+    "temp_min": "temp_min",
+    "cloud_cover": "cloud_cover_mean",
+    "humidity": "humidity_mean",
+    "precip_chance": "precip_chance",
+}
+
 
 def _geo_lookup() -> pd.DataFrame:
     points = all_grid_points()
     return pd.DataFrame([{"point_id": p.point_id, "city_id": p.city_id, "lat": p.lat, "lon": p.lon} for p in points])
+
+
+def build_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Adds lead_days_sq, doy_sin/cos, lat/lon, and city dummies to a frame that
+    already has point_id, valid_date, lead_days, forecast_value columns. Shared by
+    training (load_dimension_frame, below) and live scoring (models/scoring.py) so
+    the two paths can never silently diverge on how a feature is computed."""
+    df = df.merge(_geo_lookup(), on="point_id", how="left")
+    if df["city_id"].isna().any():
+        raise ValueError("row(s) reference point_id(s) not found in the current geo registry")
+
+    df["valid_date"] = pd.to_datetime(df["valid_date"]).dt.date
+    doy = pd.to_datetime(df["valid_date"]).dt.dayofyear
+    df["lead_days_sq"] = df["lead_days"] ** 2
+    df["doy_sin"] = np.sin(2 * np.pi * doy / _DAYS_PER_YEAR)
+    df["doy_cos"] = np.cos(2 * np.pi * doy / _DAYS_PER_YEAR)
+    for c in _CITY_IDS[1:]:
+        df[f"city_{c}"] = (df["city_id"] == c).astype(float)
+    return df
 
 
 def load_dimension_frame(dimension: str) -> pd.DataFrame:
@@ -50,17 +81,6 @@ def load_dimension_frame(dimension: str) -> pd.DataFrame:
         [dimension],
     ).df()
 
-    df = gold.merge(_geo_lookup(), on="point_id", how="left")
-    if df["city_id"].isna().any():
-        raise ValueError("gold rows reference point_id(s) not found in the current geo registry")
-
-    df["valid_date"] = pd.to_datetime(df["valid_date"]).dt.date
-    doy = pd.to_datetime(df["valid_date"]).dt.dayofyear
-    df["lead_days_sq"] = df["lead_days"] ** 2
-    df["doy_sin"] = np.sin(2 * np.pi * doy / _DAYS_PER_YEAR)
-    df["doy_cos"] = np.cos(2 * np.pi * doy / _DAYS_PER_YEAR)
-    for c in _CITY_IDS[1:]:
-        df[f"city_{c}"] = (df["city_id"] == c).astype(float)
-
+    df = build_features(gold)
     df["target"] = df["is_large_error"].astype(int)
     return df

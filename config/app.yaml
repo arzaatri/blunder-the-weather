@@ -13,10 +13,13 @@ providers:
   historical_forecast: "open_meteo"
   live_forecast: "open_meteo"
 
-# Backfill window, relative to today. end_lag_days is a safety buffer behind the
-# confirmed data-availability lag (both source APIs were current as of yesterday).
+# Backfill window. start_date is a fixed anchor -- 60 days back from when this was
+# widened (2026-08-09) -- not a rolling "N days before today", so the partition set only
+# grows and earlier historical partitions never fall out of range. end_lag_days is a
+# safety buffer behind the confirmed data-availability lag (both source APIs were
+# current as of yesterday).
 backfill:
-  lookback_days: 10
+  start_date: "2026-06-10"
   end_lag_days: 2
 
 # provisional, not yet tuned against real error percentiles
@@ -32,3 +35,18 @@ models:
   calib_fraction: 0.2
   class_weight: "balanced"
   random_state: 0
+
+# Fixed anchor for live-scoring partitions -- the day live scoring started, not a
+# rolling offset (same reasoning as backfill.start_date).
+live:
+  start_date: "2026-08-09"
+
+# Equal by default; not required to sum to 1 (normalized in code). Tune per-dimension
+# once there's evidence some errors matter more than others for the combined score.
+ensemble:
+  weights:
+    temp_max: 1.0
+    temp_min: 1.0
+    cloud_cover: 1.0
+    humidity: 1.0
+    precip_chance: 1.0

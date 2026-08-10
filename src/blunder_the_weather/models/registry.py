@@ -6,7 +6,10 @@ changes to training or serving code.
 
 from pathlib import Path
 
+from dagster_aws.s3 import S3Resource
+
 from blunder_the_weather.config import REPO_ROOT, load_config
+from blunder_the_weather.lakehouse.io import download_dir_from_s3
 from blunder_the_weather.models.base import ModelWrapper
 from blunder_the_weather.models.linear import LogisticRegressionCalibratedModel
 
@@ -36,3 +39,13 @@ def local_model_dir(dimension: str, version: str) -> Path:
     source of truth (see lakehouse/duckdb_query.py's "MinIO is the only persistent
     domain state" design); this is a cache, not a second source of truth."""
     return REPO_ROOT / "models" / dimension / version
+
+
+def load_model(dimension: str, version: str, s3: S3Resource) -> ModelWrapper:
+    """Loads a trained model for scoring, using the local mirror if training already
+    ran on this machine and pulling from MinIO (the durable copy) otherwise."""
+    local_dir = local_model_dir(dimension, version)
+    if not local_dir.exists():
+        local_dir.mkdir(parents=True, exist_ok=True)
+        download_dir_from_s3(s3, model_prefix(dimension, version), local_dir)
+    return _MODEL_CLASSES[dimension].load(local_dir)

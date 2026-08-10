@@ -5,6 +5,7 @@ config/app.yaml and is safe to commit. Secrets (credentials) live in .env, which
 gitignored, and are loaded separately via pydantic-settings.
 """
 
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -38,11 +39,15 @@ class ProvidersConfig(BaseModel):
 
 
 class BackfillConfig(BaseModel):
-    """Backfill window, expressed relative to "today" rather than fixed dates so it
-    doesn't go stale. end_lag_days accounts for data-availability lag confirmed via the
-    Phase 0 spike (both APIs were current as of yesterday, but a small buffer is safer)."""
+    """start_date is a fixed anchor (not "today - N days") so the partition set only
+    grows -- it never silently drops the earliest historical partitions as time passes,
+    which would happen if the start point kept sliding forward with "today". end_lag_days
+    accounts for data-availability lag confirmed via the Phase 0 spike (both APIs were
+    current as of yesterday, but a small buffer is safer); the newest valid partition is
+    always "today - end_lag_days", computed dynamically (see dagster_defs/partitions.py)
+    so it keeps advancing without needing a code/config change or a process restart."""
 
-    lookback_days: int
+    start_date: date
     end_lag_days: int
 
 
@@ -70,6 +75,23 @@ class ModelsConfig(BaseModel):
     random_state: int
 
 
+class LiveConfig(BaseModel):
+    """start_date anchors the live-scoring partition set (dagster_defs/partitions.py's
+    LIVE_PARTITIONS), same fixed-anchor pattern as BackfillConfig.start_date -- it's
+    the day live scoring started, not something that should ever move. Unlike backfill,
+    there's no end_lag: a live forecast is scored the same day it's issued."""
+
+    start_date: date
+
+
+class EnsembleConfig(BaseModel):
+    """Per-dimension weights for combining the 5 models' calibrated probabilities into
+    one volatility score (models/ensemble.py). Normalized internally, so these are
+    relative weights, not required to sum to 1."""
+
+    weights: dict[str, float]
+
+
 class AppConfig(BaseModel):
     # No field defaults here on purpose: every value must come from config/app.yaml so
     # there is one source of truth, not code defaults that can silently drift from it.
@@ -79,6 +101,8 @@ class AppConfig(BaseModel):
     backfill: BackfillConfig
     thresholds: ThresholdsConfig
     models: ModelsConfig
+    live: LiveConfig
+    ensemble: EnsembleConfig
 
     @classmethod
     def from_yaml(cls, path: Path = CONFIG_PATH) -> "AppConfig":
