@@ -1,6 +1,5 @@
-"""Read-only data access for the Streamlit dashboard. Every function opens its own
-duckdb connection via lakehouse/duckdb_query.get_connection() (no persisted .duckdb
-file, no shared state) and reads gold/ directly from MinIO.
+"""Read-only data access for the Streamlit dashboard. Reads gold/ directly from MinIO
+via duckdb -- no persisted .duckdb file, no separate database.
 """
 
 from datetime import date
@@ -19,9 +18,11 @@ from blunder_the_weather.models.registry import DIMENSIONS, load_model
 
 def latest_scored_date() -> date | None:
     """Most recent issued_date with a gold/predictions partition, or None if
-    daily_live_job has never run. DISTINCT ... ORDER BY ... LIMIT 1 rather than
-    MAX(dt) -- MAX() over a hive-partitioned glob hits a DuckDB internal error
-    (statistics propagation bug) when there's only one partition present.
+    daily_live_job has never run.
+
+    DISTINCT ... ORDER BY ... LIMIT 1 rather than MAX(dt) -- MAX() over a
+    hive-partitioned glob hits a separate DuckDB internal error (statistics
+    propagation bug) when there's only one partition present.
 
     Only "no files match the glob" is treated as "no predictions yet" -- anything
     else (e.g. MinIO unreachable) re-raises, so a connection failure shows up as an

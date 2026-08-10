@@ -17,8 +17,11 @@ dependencies = [
     "duckdb>=1.5.5",
     "great-expectations>=1.20.0",
     "joblib>=1.5.3",
-    "pandas>=3.0.5",
-    "pyarrow>=25.0.0",
+    # pandas 3.x + pyarrow 20+ segfaults inside Streamlit's dataframe rendering on any
+    # rerun after the first (confirmed via a zero-project-code repro) -- pinned below
+    # both until upstream fixes it.
+    "pandas>=2.2,<3",
+    "pyarrow>=14,<20",
     "pydantic>=2",
     "pydantic-settings>=2.15.0",
     "pyyaml>=6.0.3",
