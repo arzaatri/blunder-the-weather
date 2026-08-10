@@ -50,3 +50,9 @@ ensemble:
     cloud_cover: 1.0
     humidity: 1.0
     precip_chance: 1.0
+
+# How the dashboard collapses each city's 9 grid points into one number for display.
+# "mean" reads as "expected reliability"; "max" reads as "worst case anywhere in the
+# city" -- switch to "max" if the point is closer to a warning than a summary.
+dashboard:
+  city_aggregation: "mean"

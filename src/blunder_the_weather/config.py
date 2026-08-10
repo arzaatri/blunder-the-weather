@@ -7,7 +7,7 @@ gitignored, and are loaded separately via pydantic-settings.
 
 from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel
@@ -92,6 +92,14 @@ class EnsembleConfig(BaseModel):
     weights: dict[str, float]
 
 
+class DashboardConfig(BaseModel):
+    """city_aggregation controls how the 9 grid points per city are collapsed to one
+    city-level number for display -- models/scoring still runs at grid-point
+    granularity underneath, this only affects the dashboard's summary view."""
+
+    city_aggregation: Literal["mean", "max"]
+
+
 class AppConfig(BaseModel):
     # No field defaults here on purpose: every value must come from config/app.yaml so
     # there is one source of truth, not code defaults that can silently drift from it.
@@ -103,6 +111,7 @@ class AppConfig(BaseModel):
     models: ModelsConfig
     live: LiveConfig
     ensemble: EnsembleConfig
+    dashboard: DashboardConfig
 
     @classmethod
     def from_yaml(cls, path: Path = CONFIG_PATH) -> "AppConfig":
